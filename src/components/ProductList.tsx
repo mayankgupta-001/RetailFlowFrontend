@@ -2,16 +2,19 @@ import type { Product } from "../types";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
 
+
 interface ProductListProps {
   products: Product[];
   onDelete: (id: number) => void;
   onAddToCart: (product: Product) => void;
+  onEdit: (product: Product) => void;
 }
 
 export default function ProductList({
   products,
   onDelete,
   onAddToCart,
+  onEdit,
 }: ProductListProps) {
   if (products.length === 0) {
     return (
@@ -68,6 +71,33 @@ export default function ProductList({
               className="flex-1 bg-blue-600 text-white rounded px-3 py-2 text-sm hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
               Add to cart
+            </button>
+            <button
+              onClick={() => handlePrint(product.id)}
+              className="bg-gray-100 text-gray-700 rounded px-3 py-2 text-sm hover:bg-gray-200"
+            >
+              Print
+            </button>
+            <button
+              onClick={() => onDelete(product.id)}
+              className="bg-red-50 text-red-600 rounded px-3 py-2 text-sm hover:bg-red-100"
+            >
+              Delete
+            </button>
+          </div>
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={() => onAddToCart(product)}
+              disabled={product.stock === 0}
+              className="flex-1 bg-blue-600 text-white rounded px-3 py-2 text-sm hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            >
+              Add to cart
+            </button>
+            <button
+              onClick={() => onEdit(product)}
+              className="bg-gray-100 text-gray-700 rounded px-3 py-2 text-sm hover:bg-gray-200"
+            >
+              Edit
             </button>
             <button
               onClick={() => handlePrint(product.id)}

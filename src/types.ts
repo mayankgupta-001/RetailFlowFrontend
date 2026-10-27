@@ -47,4 +47,57 @@ export interface SaleResponse {
   paymentMethod: PaymentMethod;
   createdAt: string;
   items: SaleItemResponse[];
+  voided: boolean;
+}
+
+export interface UpdateProductRequest {
+  name: string;
+  sellingPrice: number;
+  costPrice?: number;
+  minStock: number;
+  category?: string;
+}
+
+export type InventoryTransactionType = "STOCK_IN" | "STOCK_OUT" | "ADJUSTMENT";
+
+export interface StockAdjustmentRequest {
+  productId: number;
+  type: InventoryTransactionType;
+  quantity: number;
+  reason?: string;
+}
+
+export interface InventoryLogResponse {
+  id: number;
+  productId: number;
+  type: InventoryTransactionType;
+  quantity: number;
+  previousStock: number;
+  newStock: number;
+  reason: string | null;
+  createdAt: string;
+}
+
+export type Role = "ADMIN" | "CASHIER";
+
+export interface AuthUser {
+  username: string;
+  role: Role;
+}
+
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  token: string;
+  username: string;
+  role: Role;
+}
+
+export interface RegisterRequest {
+  username: string;
+  password: string;
+  role: Role;
 }

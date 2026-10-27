@@ -1,13 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import type { CartItem, PaymentMethod, Product, SaleResponse } from "../types";
 import { getProductByBarcode, checkout } from "../api";
+import CameraScanner from "../components/CameraScanner";
+import ProductSearchBar from "../components/ProductSearchBar";
+import { openReceiptWindow } from "../utils/receipt";
+import { useToast } from "../contexts/ToastContext";
 
 interface CheckoutPageProps {
   cart: CartItem[];
   setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
+  products: Product[];
 }
 
-export default function CheckoutPage({ cart, setCart }: CheckoutPageProps) {
+export default function CheckoutPage({ cart, setCart, products }: CheckoutPageProps) {
   const [barcodeInput, setBarcodeInput] = useState("");
   const [scanError, setScanError] = useState<string | null>(null);
   const [discount, setDiscount] = useState(0);
@@ -16,6 +21,9 @@ export default function CheckoutPage({ cart, setCart }: CheckoutPageProps) {
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<SaleResponse | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [cameraEnabled, setCameraEnabled] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const { showToast } = useToast();
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -35,15 +43,12 @@ export default function CheckoutPage({ cart, setCart }: CheckoutPageProps) {
     });
   }
 
-  async function handleScan(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key !== "Enter") return;
-    e.preventDefault();
-
-    const barcode = barcodeInput.trim();
-    if (!barcode) return;
+  async function lookupAndAddByBarcode(barcode: string) {
+    const trimmed = barcode.trim();
+    if (!trimmed) return;
 
     try {
-      const product = await getProductByBarcode(barcode);
+      const product = await getProductByBarcode(trimmed);
       if (product.stock <= 0) {
         setScanError(`${product.name} is out of stock`);
       } else {
@@ -54,9 +59,25 @@ export default function CheckoutPage({ cart, setCart }: CheckoutPageProps) {
       setScanError(
         err instanceof Error ? err.message : "No product found for that barcode"
       );
-    } finally {
-      setBarcodeInput("");
-      inputRef.current?.focus();
+    }
+  }
+
+  async function handleScan(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    await lookupAndAddByBarcode(barcodeInput);
+    setBarcodeInput("");
+    inputRef.current?.focus();
+  }
+
+  function handleCameraScan(code: string) {
+    lookupAndAddByBarcode(code);
+  }
+
+  function handlePrintReceipt() {
+    if (!receipt) return;
+    if (!openReceiptWindow(receipt)) {
+      showToast("Pop-up blocked. Allow pop-ups to print receipts.", "error");
     }
   }
 
@@ -137,12 +158,20 @@ export default function CheckoutPage({ cart, setCart }: CheckoutPageProps) {
           </div>
           <p className="text-gray-500 pt-1">Paid via {receipt.paymentMethod}</p>
         </div>
-        <button
-          onClick={() => setReceipt(null)}
-          className="mt-6 w-full bg-blue-600 text-white rounded px-3 py-2 text-sm hover:bg-blue-700"
-        >
-          New sale
-        </button>
+        <div className="mt-6 flex gap-2">
+          <button
+            onClick={handlePrintReceipt}
+            className="flex-1 bg-gray-100 text-gray-700 rounded px-3 py-2 text-sm hover:bg-gray-200"
+          >
+            Print receipt
+          </button>
+          <button
+            onClick={() => setReceipt(null)}
+            className="flex-1 bg-blue-600 text-white rounded px-3 py-2 text-sm hover:bg-blue-700"
+          >
+            New sale
+          </button>
+        </div>
       </div>
     );
   }
@@ -152,6 +181,21 @@ export default function CheckoutPage({ cart, setCart }: CheckoutPageProps) {
       <h2 className="text-xl font-bold mb-4">Checkout</h2>
 
       <div className="mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium">Camera scanning</span>
+          <button
+            onClick={() => setCameraEnabled((v) => !v)}
+            className={`px-3 py-1.5 rounded text-sm font-medium ${
+              cameraEnabled
+                ? "bg-red-600 text-white hover:bg-red-700"
+                : "bg-blue-600 text-white hover:bg-blue-700"
+            }`}
+          >
+            {cameraEnabled ? "Disable camera" : "Enable camera"}
+          </button>
+        </div>
+
+        <CameraScanner enabled={cameraEnabled} onScan={handleCameraScan} />
         <label className="block text-sm font-medium mb-1">Scan barcode</label>
         <input
           ref={inputRef}
@@ -163,6 +207,44 @@ export default function CheckoutPage({ cart, setCart }: CheckoutPageProps) {
           autoFocus
         />
         {scanError && <p className="text-sm text-red-600 mt-1">{scanError}</p>}
+
+        <div className="mb-4 mt-4">
+          <label className="block text-sm font-medium mb-1">
+            Or search manually
+          </label>
+          <ProductSearchBar value={searchQuery} onChange={setSearchQuery} />
+          {searchQuery && (
+            <div className="border rounded-lg bg-white divide-y max-h-48 overflow-y-auto">
+              {products
+                .filter(
+                  (p) =>
+                    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    (p.category ?? "")
+                      .toLowerCase()
+                      .includes(searchQuery.toLowerCase())
+                )
+                .slice(0, 8)
+                .map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => {
+                      if (p.stock > 0) {
+                        addToCart(p);
+                        setSearchQuery("");
+                      }
+                    }}
+                    disabled={p.stock === 0}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex justify-between disabled:opacity-40"
+                  >
+                    <span>{p.name}</span>
+                    <span className="text-gray-500">
+                      ₹{p.sellingPrice.toFixed(2)} · {p.stock} left
+                    </span>
+                  </button>
+                ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {cart.length === 0 ? (
