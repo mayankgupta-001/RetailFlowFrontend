@@ -1,1 +1,118 @@
 @import "tailwindcss";
+
+:root {
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  color: #0f172a;
+  background: #f8fafc;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+input,
+select,
+textarea {
+  outline: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgb(99 102 241 / 0.12);
+}
+
+@layer components {
+  .rf-card {
+    @apply rounded-2xl border border-slate-200 bg-white shadow-sm;
+  }
+
+  .rf-input {
+    @apply w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5
+      text-sm text-slate-900 placeholder:text-slate-400 transition;
+  }
+
+  .rf-button-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl
+      bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white
+      transition hover:bg-indigo-700 active:scale-[0.98]
+      disabled:bg-slate-300;
+  }
+
+  .rf-button-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl
+      border border-slate-200 bg-white px-4 py-2.5
+      text-sm font-semibold text-slate-700
+      transition hover:bg-slate-50 active:scale-[0.98];
+  }
+
+  .rf-button-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl
+      bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600
+      transition hover:bg-red-100;
+  }
+
+  .rf-badge-success {
+    @apply inline-flex items-center rounded-full bg-emerald-50
+      px-2.5 py-1 text-xs font-semibold text-emerald-700;
+  }
+
+  .rf-badge-warning {
+    @apply inline-flex items-center rounded-full bg-amber-50
+      px-2.5 py-1 text-xs font-semibold text-amber-700;
+  }
+
+  .rf-badge-danger {
+    @apply inline-flex items-center rounded-full bg-red-50
+      px-2.5 py-1 text-xs font-semibold text-red-700;
+  }
+
+  .rf-page {
+    @apply mx-auto w-full max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8;
+  }
+
+  .rf-page-title {
+    @apply text-2xl font-bold tracking-tight text-slate-900;
+  }
+
+  .rf-page-subtitle {
+    @apply mt-1 text-sm text-slate-500;
+  }
+}

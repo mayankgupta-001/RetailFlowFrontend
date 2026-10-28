@@ -1,11 +1,29 @@
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  Boxes,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  RefreshCcw,
+} from "lucide-react";
+
 import type {
   InventoryLogResponse,
   InventoryTransactionType,
   Product,
 } from "../types";
-import { adjustStock, getInventoryLogs } from "../api";
-import { useToast } from "../contexts/ToastContext";
+
+import {
+  adjustStock,
+  getInventoryLogs,
+} from "../api";
+
+import {
+  useToast,
+} from "../contexts/ToastContext";
 
 interface InventoryPageProps {
   products: Product[];
@@ -16,32 +34,83 @@ export default function InventoryPage({
   products,
   onStockChanged,
 }: InventoryPageProps) {
-  const [selectedProductId, setSelectedProductId] = useState<number | null>(
+  const [
+    selectedProductId,
+    setSelectedProductId,
+  ] = useState<number | null>(
     products[0]?.id ?? null
   );
-  const [logs, setLogs] = useState<InventoryLogResponse[]>([]);
-  const [loadingLogs, setLoadingLogs] = useState(false);
-  const [type, setType] = useState<InventoryTransactionType>("STOCK_IN");
-  const [quantity, setQuantity] = useState<number>(0);
-  const [reason, setReason] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const { showToast } = useToast();
 
-  const selectedProduct = products.find((p) => p.id === selectedProductId);
+  const [logs, setLogs] =
+    useState<InventoryLogResponse[]>(
+      []
+    );
+
+  const [
+    loadingLogs,
+    setLoadingLogs,
+  ] = useState(false);
+
+  const [type, setType] =
+    useState<InventoryTransactionType>(
+      "STOCK_IN"
+    );
+
+  const [quantity, setQuantity] =
+    useState<number>(0);
+
+  const [reason, setReason] =
+    useState("");
+
+  const [submitting, setSubmitting] =
+    useState(false);
+
+  const { showToast } =
+    useToast();
+
+  const selectedProduct =
+    products.find(
+      (product) =>
+        product.id ===
+        selectedProductId
+    );
 
   useEffect(() => {
-    if (selectedProductId === null) return;
+    if (selectedProductId === null) {
+      return;
+    }
+
     loadLogs(selectedProductId);
   }, [selectedProductId]);
 
-  async function loadLogs(productId: number) {
+  useEffect(() => {
+    if (
+      selectedProductId === null &&
+      products.length > 0
+    ) {
+      setSelectedProductId(
+        products[0].id
+      );
+    }
+  }, [products]);
+
+  async function loadLogs(
+    productId: number
+  ) {
     setLoadingLogs(true);
+
     try {
-      const data = await getInventoryLogs(productId);
+      const data =
+        await getInventoryLogs(
+          productId
+        );
+
       setLogs(data);
     } catch (err) {
       showToast(
-        err instanceof Error ? err.message : "Failed to load inventory logs",
+        err instanceof Error
+          ? err.message
+          : "Failed to load inventory logs",
         "error"
       );
     } finally {
@@ -49,26 +118,48 @@ export default function InventoryPage({
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(
+    e: React.FormEvent
+  ) {
     e.preventDefault();
-    if (selectedProductId === null || quantity <= 0) return;
+
+    if (
+      selectedProductId === null ||
+      quantity <= 0
+    ) {
+      return;
+    }
 
     setSubmitting(true);
+
     try {
       await adjustStock({
-        productId: selectedProductId,
+        productId:
+          selectedProductId,
         type,
         quantity,
-        reason: reason || undefined,
+        reason:
+          reason || undefined,
       });
-      showToast("Stock updated", "success");
+
+      showToast(
+        "Stock updated successfully",
+        "success"
+      );
+
       setQuantity(0);
       setReason("");
-      await loadLogs(selectedProductId);
+
+      await loadLogs(
+        selectedProductId
+      );
+
       onStockChanged();
     } catch (err) {
       showToast(
-        err instanceof Error ? err.message : "Failed to adjust stock",
+        err instanceof Error
+          ? err.message
+          : "Failed to adjust stock",
         "error"
       );
     } finally {
@@ -76,113 +167,388 @@ export default function InventoryPage({
     }
   }
 
-  return (
-    <div className="max-w-3xl mx-auto">
-      <h2 className="text-xl font-bold mb-4">Inventory</h2>
+  const totalProducts =
+    products.length;
 
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-1">Product</label>
+  const lowStockCount =
+    products.filter(
+      (product) =>
+        product.stock <=
+        product.minStock
+    ).length;
+
+  const outOfStockCount =
+    products.filter(
+      (product) =>
+        product.stock === 0
+    ).length;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <div className="mb-2 flex items-center gap-2 text-sm text-slate-400">
+          <Boxes size={16} />
+          Stock management
+        </div>
+
+        <h1 className="rf-page-title">
+          Inventory
+        </h1>
+
+        <p className="rf-page-subtitle">
+          Track stock levels and manage
+          inventory adjustments.
+        </p>
+      </div>
+
+      {/* Stats */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="rf-card p-5">
+          <p className="text-sm text-slate-500">
+            Total products
+          </p>
+
+          <p className="mt-2 text-3xl font-bold text-slate-900">
+            {totalProducts}
+          </p>
+
+          <p className="mt-1 text-xs text-slate-400">
+            Products in catalogue
+          </p>
+        </div>
+
+        <div className="rf-card p-5">
+          <p className="text-sm text-slate-500">
+            Low stock
+          </p>
+
+          <p className="mt-2 text-3xl font-bold text-amber-600">
+            {lowStockCount}
+          </p>
+
+          <p className="mt-1 text-xs text-slate-400">
+            Need attention
+          </p>
+        </div>
+
+        <div className="rf-card p-5">
+          <p className="text-sm text-slate-500">
+            Out of stock
+          </p>
+
+          <p className="mt-2 text-3xl font-bold text-red-600">
+            {outOfStockCount}
+          </p>
+
+          <p className="mt-1 text-xs text-slate-400">
+            Currently unavailable
+          </p>
+        </div>
+      </div>
+
+      {/* Product selector */}
+      <div className="rf-card p-5">
+        <label className="mb-2 block text-sm font-semibold text-slate-700">
+          Select product
+        </label>
+
         <select
-          value={selectedProductId ?? ""}
-          onChange={(e) => setSelectedProductId(parseInt(e.target.value))}
-          className="w-full border rounded px-3 py-2 text-sm"
+          value={
+            selectedProductId ?? ""
+          }
+          onChange={(e) =>
+            setSelectedProductId(
+              parseInt(
+                e.target.value
+              )
+            )
+          }
+          className="rf-input"
         >
-          {products.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name} — current stock: {p.stock}
-            </option>
-          ))}
+          {products.map(
+            (product) => (
+              <option
+                key={product.id}
+                value={product.id}
+              >
+                {product.name} —{" "}
+                current stock:{" "}
+                {product.stock}
+              </option>
+            )
+          )}
         </select>
       </div>
 
       {selectedProduct && (
-        <form
-          onSubmit={handleSubmit}
-          className="border rounded-lg bg-white p-4 mb-6 space-y-3"
-        >
-          <h3 className="font-semibold">Adjust stock</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">
-                Type
-              </label>
-              <select
-                value={type}
-                onChange={(e) =>
-                  setType(e.target.value as InventoryTransactionType)
-                }
-                className="w-full border rounded px-3 py-2 text-sm"
-              >
-                <option value="STOCK_IN">Stock in (restock)</option>
-                <option value="STOCK_OUT">Stock out (remove)</option>
-                <option value="ADJUSTMENT">Adjustment (correction)</option>
-              </select>
+        <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
+          {/* Adjustment */}
+          <form
+            onSubmit={
+              handleSubmit
+            }
+            className="rf-card p-5"
+          >
+            <div className="mb-6">
+              <h2 className="font-bold text-slate-900">
+                Adjust stock
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Update the inventory for{" "}
+                <span className="font-semibold text-slate-700">
+                  {
+                    selectedProduct.name
+                  }
+                </span>
+                .
+              </p>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">
-                Quantity
-              </label>
-              <input
-                type="number"
-                min="1"
-                value={quantity || ""}
-                onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
-                className="w-full border rounded px-3 py-2 text-sm"
+
+            <div className="mb-5 rounded-xl bg-slate-50 p-4">
+              <p className="text-xs text-slate-400">
+                Current stock
+              </p>
+
+              <p className="mt-1 text-3xl font-bold text-slate-900">
+                {
+                  selectedProduct.stock
+                }
+              </p>
+            </div>
+
+            <div className="space-y-5">
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                  Adjustment type
+                </label>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setType(
+                        "STOCK_IN"
+                      )
+                    }
+                    className={`rounded-xl border px-2 py-3 text-xs font-semibold ${
+                      type ===
+                      "STOCK_IN"
+                        ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    Stock in
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setType(
+                        "STOCK_OUT"
+                      )
+                    }
+                    className={`rounded-xl border px-2 py-3 text-xs font-semibold ${
+                      type ===
+                      "STOCK_OUT"
+                        ? "border-red-500 bg-red-50 text-red-700"
+                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    Stock out
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setType(
+                        "ADJUSTMENT"
+                      )
+                    }
+                    className={`rounded-xl border px-2 py-3 text-xs font-semibold ${
+                      type ===
+                      "ADJUSTMENT"
+                        ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    Correction
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                  Quantity
+                </label>
+
+                <input
+                  type="number"
+                  min="1"
+                  value={
+                    quantity || ""
+                  }
+                  onChange={(e) =>
+                    setQuantity(
+                      parseInt(
+                        e.target.value
+                      ) || 0
+                    )
+                  }
+                  className="rf-input"
+                  placeholder="Enter quantity"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                  Reason
+                </label>
+
+                <input
+                  value={reason}
+                  onChange={(e) =>
+                    setReason(
+                      e.target.value
+                    )
+                  }
+                  placeholder="e.g. New shipment"
+                  className="rf-input"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={
+                  submitting ||
+                  quantity <= 0
+                }
+                className="rf-button-primary w-full"
+              >
+                {submitting
+                  ? "Saving..."
+                  : "Apply adjustment"}
+              </button>
+            </div>
+          </form>
+
+          {/* History */}
+          <div className="rf-card overflow-hidden">
+            <div className="flex items-center justify-between border-b border-slate-200 p-5">
+              <div>
+                <h2 className="font-bold text-slate-900">
+                  Inventory history
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  Recent changes for this
+                  product.
+                </p>
+              </div>
+
+              <RefreshCcw
+                size={18}
+                className="text-slate-400"
               />
             </div>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">
-              Reason (optional)
-            </label>
-            <input
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="e.g. New shipment, damaged goods, stock count correction"
-              className="w-full border rounded px-3 py-2 text-sm"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={submitting || quantity <= 0}
-            className="bg-blue-600 text-white rounded px-4 py-2 text-sm hover:bg-blue-700 disabled:bg-gray-300"
-          >
-            {submitting ? "Saving..." : "Apply adjustment"}
-          </button>
-        </form>
-      )}
 
-      <div className="border rounded-lg bg-white">
-        <h3 className="font-semibold p-4 pb-2">History</h3>
-        {loadingLogs ? (
-          <p className="text-sm text-gray-500 p-4 pt-0">Loading...</p>
-        ) : logs.length === 0 ? (
-          <p className="text-sm text-gray-500 p-4 pt-0">
-            No stock changes recorded yet for this product.
-          </p>
-        ) : (
-          <div className="divide-y">
-            {logs.map((log) => (
-              <div key={log.id} className="p-4 flex justify-between text-sm">
-                <div>
-                  <p className="font-medium">
-                    {log.type === "STOCK_IN" && "+ "}
-                    {log.type === "STOCK_OUT" && "− "}
-                    {log.type} · {log.quantity}
-                  </p>
-                  <p className="text-gray-500">
-                    {new Date(log.createdAt).toLocaleString()}
-                    {log.reason && ` · ${log.reason}`}
-                  </p>
-                </div>
-                <span className="text-gray-500">
-                  {log.previousStock} → {log.newStock}
-                </span>
+            {loadingLogs ? (
+              <div className="space-y-3 p-5">
+                {[1, 2, 3].map(
+                  (item) => (
+                    <div
+                      key={item}
+                      className="animate-pulse rounded-xl bg-slate-100 p-5"
+                    >
+                      <div className="h-4 w-32 rounded bg-slate-200" />
+
+                      <div className="mt-2 h-3 w-48 rounded bg-slate-200" />
+                    </div>
+                  )
+                )}
               </div>
-            ))}
+            ) : logs.length === 0 ? (
+              <div className="px-6 py-16 text-center">
+                <p className="text-sm text-slate-500">
+                  No stock changes recorded
+                  yet.
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {logs.map(
+                  (log) => (
+                    <div
+                      key={log.id}
+                      className="flex items-center justify-between gap-4 p-5"
+                    >
+                      <div className="flex min-w-0 items-start gap-3">
+                        <div
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                            log.type ===
+                            "STOCK_IN"
+                              ? "bg-emerald-50 text-emerald-600"
+                              : log.type ===
+                                "STOCK_OUT"
+                              ? "bg-red-50 text-red-600"
+                              : "bg-indigo-50 text-indigo-600"
+                          }`}
+                        >
+                          {log.type ===
+                          "STOCK_IN" ? (
+                            <ArrowDownToLine
+                              size={17}
+                            />
+                          ) : log.type ===
+                            "STOCK_OUT" ? (
+                            <ArrowUpFromLine
+                              size={17}
+                            />
+                          ) : (
+                            <RefreshCcw
+                              size={17}
+                            />
+                          )}
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-slate-800">
+                            {
+                              log.type
+                            }{" "}
+                            ·{" "}
+                            {
+                              log.quantity
+                            }
+                          </p>
+
+                          <p className="mt-1 truncate text-xs text-slate-500">
+                            {new Date(
+                              log.createdAt
+                            ).toLocaleString()}
+                            {log.reason &&
+                              ` · ${log.reason}`}
+                          </p>
+                        </div>
+                      </div>
+
+                      <span className="shrink-0 text-sm font-semibold text-slate-600">
+                        {
+                          log.previousStock
+                        }{" "}
+                        →{" "}
+                        {
+                          log.newStock
+                        }
+                      </span>
+                    </div>
+                  )
+                )}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

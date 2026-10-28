@@ -1,71 +1,160 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
+import {
+  LogIn,
+  Store,
+} from "lucide-react";
+
+import {
+  useNavigate,
+} from "react-router-dom";
+
+import {
+  useAuth,
+} from "../contexts/AuthContext";
 
 export default function LoginPage() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const { login } = useAuth();
-  const navigate = useNavigate();
+  const [username, setUsername] =
+    useState("");
 
-  async function handleSubmit(e: React.FormEvent) {
+  const [password, setPassword] =
+    useState("");
+
+  const [error, setError] =
+    useState<string | null>(null);
+
+  const [submitting, setSubmitting] =
+    useState(false);
+
+  const { login } =
+    useAuth();
+
+  const navigate =
+    useNavigate();
+
+  async function handleSubmit(
+    e: React.FormEvent
+  ) {
     e.preventDefault();
+
     setSubmitting(true);
     setError(null);
+
     try {
-      await login(username, password);
-      navigate("/", { replace: true });
+      await login(
+        username,
+        password
+      );
+
+      navigate("/", {
+        replace: true,
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Login failed"
+      );
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white border rounded-lg shadow-sm p-6 w-full max-w-sm space-y-4"
-      >
-        <h1 className="text-xl font-bold text-center">RetailFlow</h1>
+    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-12">
+      <div className="w-full max-w-md">
+        <div className="mb-8 text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-xl shadow-indigo-950/40">
+            <Store size={27} />
+          </div>
 
-        {error && (
-          <p className="text-sm text-red-600 bg-red-50 rounded p-2">{error}</p>
-        )}
+          <h1 className="mt-5 text-2xl font-bold text-white">
+            RetailFlow
+          </h1>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Username</label>
-          <input
-            required
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full border rounded px-3 py-2 text-sm"
-            autoFocus
-          />
+          <p className="mt-2 text-sm text-slate-400">
+            Retail management made simple.
+          </p>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Password</label>
-          <input
-            required
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full border rounded px-3 py-2 text-sm"
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full bg-blue-600 text-white rounded px-3 py-2 text-sm font-medium hover:bg-blue-700 disabled:bg-gray-300"
+        <form
+          onSubmit={handleSubmit}
+          className="rounded-2xl bg-white p-6 shadow-2xl sm:p-8"
         >
-          {submitting ? "Signing in..." : "Sign in"}
-        </button>
-      </form>
+          <div className="mb-6">
+            <h2 className="text-xl font-bold text-slate-900">
+              Welcome back
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Sign in to continue to your
+              workspace.
+            </p>
+          </div>
+
+          {error && (
+            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
+          <div className="space-y-5">
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">
+                Username
+              </label>
+
+              <input
+                required
+                value={username}
+                onChange={(e) =>
+                  setUsername(
+                    e.target.value
+                  )
+                }
+                className="rf-input"
+                placeholder="Enter your username"
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">
+                Password
+              </label>
+
+              <input
+                required
+                type="password"
+                value={password}
+                onChange={(e) =>
+                  setPassword(
+                    e.target.value
+                  )
+                }
+                className="rf-input"
+                placeholder="Enter your password"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="rf-button-primary w-full py-3"
+            >
+              <LogIn size={17} />
+
+              {submitting
+                ? "Signing in..."
+                : "Sign in"}
+            </button>
+          </div>
+        </form>
+
+        <p className="mt-6 text-center text-xs text-slate-500">
+          RetailFlow · Retail management
+          system
+        </p>
+      </div>
     </div>
   );
 }

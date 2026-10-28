@@ -1,8 +1,11 @@
 import { useState } from "react";
+import { Plus } from "lucide-react";
 import type { CreateProductRequest } from "../types";
 
 interface AddProductFormProps {
-  onSubmit: (request: CreateProductRequest) => Promise<void>;
+  onSubmit: (
+    request: CreateProductRequest
+  ) => Promise<void>;
 }
 
 const emptyForm: CreateProductRequest = {
@@ -15,111 +18,242 @@ const emptyForm: CreateProductRequest = {
   category: "",
 };
 
-export default function AddProductForm({ onSubmit }: AddProductFormProps) {
-  const [form, setForm] = useState<CreateProductRequest>(emptyForm);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export default function AddProductForm({
+  onSubmit,
+}: AddProductFormProps) {
+  const [form, setForm] =
+    useState<CreateProductRequest>(
+      emptyForm
+    );
 
-  async function handleSubmit(e: React.FormEvent) {
+  const [submitting, setSubmitting] =
+    useState(false);
+
+  const [error, setError] =
+    useState<string | null>(null);
+
+  async function handleSubmit(
+    e: React.FormEvent
+  ) {
     e.preventDefault();
+
     setSubmitting(true);
     setError(null);
+
     try {
       await onSubmit(form);
+
       setForm(emptyForm);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add product");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to add product"
+      );
     } finally {
       setSubmitting(false);
     }
   }
 
+  function updateForm(
+    values: Partial<CreateProductRequest>
+  ) {
+    setForm((current) => ({
+      ...current,
+      ...values,
+    }));
+  }
+
   return (
     <form
       onSubmit={handleSubmit}
-      className="border rounded-lg p-4 bg-white shadow-sm grid grid-cols-2 gap-3 mb-6"
+      className="space-y-6"
     >
-      <h2 className="col-span-2 font-semibold text-lg">Add product</h2>
-
       {error && (
-        <p className="col-span-2 text-sm text-red-600 bg-red-50 rounded p-2">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {error}
-        </p>
+        </div>
       )}
 
-      <input
-        required
-        placeholder="Name"
-        value={form.name}
-        onChange={(e) => setForm({ ...form, name: e.target.value })}
-        className="border rounded px-3 py-2 text-sm"
-      />
-      <input
-        placeholder="Barcode (leave blank to auto-generate)"
-        value={form.barcode}
-        onChange={(e) => setForm({ ...form, barcode: e.target.value })}
-        className="border rounded px-3 py-2 text-sm"
-    />
-      <input
-        required
-        type="number"
-        step="0.01"
-        min="0.01"
-        placeholder="Selling price"
-        value={form.sellingPrice || ""}
-        onChange={(e) =>
-          setForm({ ...form, sellingPrice: parseFloat(e.target.value) })
-        }
-        className="border rounded px-3 py-2 text-sm"
-      />
-      <input
-        type="number"
-        step="0.01"
-        min="0"
-        placeholder="Cost price (optional)"
-        value={form.costPrice ?? ""}
-        onChange={(e) =>
-          setForm({
-            ...form,
-            costPrice: e.target.value ? parseFloat(e.target.value) : undefined,
-          })
-        }
-        className="border rounded px-3 py-2 text-sm"
-      />
-      <input
-        required
-        type="number"
-        min="0"
-        placeholder="Stock"
-        value={form.stock || ""}
-        onChange={(e) => setForm({ ...form, stock: parseInt(e.target.value) })}
-        className="border rounded px-3 py-2 text-sm"
-      />
-      <input
-        required
-        type="number"
-        min="0"
-        placeholder="Min stock (low-stock threshold)"
-        value={form.minStock || ""}
-        onChange={(e) =>
-          setForm({ ...form, minStock: parseInt(e.target.value) })
-        }
-        className="border rounded px-3 py-2 text-sm"
-      />
-      <input
-        placeholder="Category (optional)"
-        value={form.category}
-        onChange={(e) => setForm({ ...form, category: e.target.value })}
-        className="border rounded px-3 py-2 text-sm col-span-2"
-      />
+      <div className="grid gap-5 md:grid-cols-2">
+        <div>
+          <label className="mb-2 block text-sm font-semibold text-slate-700">
+            Product name
+          </label>
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="col-span-2 bg-green-600 text-white rounded px-3 py-2 text-sm hover:bg-green-700 disabled:bg-gray-300"
-      >
-        {submitting ? "Adding..." : "Add product"}
-      </button>
+          <input
+            required
+            placeholder="e.g. Wireless Mouse"
+            value={form.name}
+            onChange={(e) =>
+              updateForm({
+                name: e.target.value,
+              })
+            }
+            className="rf-input"
+          />
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-semibold text-slate-700">
+            Category
+          </label>
+
+          <input
+            placeholder="e.g. Electronics"
+            value={form.category}
+            onChange={(e) =>
+              updateForm({
+                category: e.target.value,
+              })
+            }
+            className="rf-input"
+          />
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-semibold text-slate-700">
+            Barcode
+          </label>
+
+          <input
+            placeholder="Leave blank to auto-generate"
+            value={form.barcode}
+            onChange={(e) =>
+              updateForm({
+                barcode: e.target.value,
+              })
+            }
+            className="rf-input font-mono"
+          />
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-semibold text-slate-700">
+            Selling price
+          </label>
+
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+              ₹
+            </span>
+
+            <input
+              required
+              type="number"
+              step="0.01"
+              min="0.01"
+              placeholder="0.00"
+              value={
+                form.sellingPrice || ""
+              }
+              onChange={(e) =>
+                updateForm({
+                  sellingPrice:
+                    parseFloat(
+                      e.target.value
+                    ) || 0,
+                })
+              }
+              className="rf-input pl-8"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-semibold text-slate-700">
+            Cost price
+          </label>
+
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+              ₹
+            </span>
+
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="Optional"
+              value={
+                form.costPrice ?? ""
+              }
+              onChange={(e) =>
+                updateForm({
+                  costPrice: e.target.value
+                    ? parseFloat(
+                        e.target.value
+                      )
+                    : undefined,
+                })
+              }
+              className="rf-input pl-8"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-semibold text-slate-700">
+            Stock quantity
+          </label>
+
+          <input
+            required
+            type="number"
+            min="0"
+            placeholder="0"
+            value={form.stock || ""}
+            onChange={(e) =>
+              updateForm({
+                stock:
+                  parseInt(
+                    e.target.value
+                  ) || 0,
+              })
+            }
+            className="rf-input"
+          />
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-semibold text-slate-700">
+            Low stock threshold
+          </label>
+
+          <input
+            required
+            type="number"
+            min="0"
+            placeholder="e.g. 10"
+            value={
+              form.minStock || ""
+            }
+            onChange={(e) =>
+              updateForm({
+                minStock:
+                  parseInt(
+                    e.target.value
+                  ) || 0,
+              })
+            }
+            className="rf-input"
+          />
+        </div>
+      </div>
+
+      <div className="flex justify-end border-t border-slate-200 pt-5">
+        <button
+          type="submit"
+          disabled={submitting}
+          className="rf-button-primary"
+        >
+          <Plus size={17} />
+
+          {submitting
+            ? "Adding..."
+            : "Add product"}
+        </button>
+      </div>
     </form>
   );
 }
