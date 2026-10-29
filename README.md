@@ -538,16 +538,6 @@ Access tokens
 
 ---
 
-## License
-
-This project is intended to be open source.
-
-A formal open-source license will be added to the repository.
-
-Until a license is added, the source code should not be assumed to be freely reusable, modified, or redistributed.
-
----
-
 ## Related Repository
 
 ### RetailFlow Backend
