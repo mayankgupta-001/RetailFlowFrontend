@@ -3,6 +3,7 @@ import type {
   InventoryLogResponse,
   LoginRequest,
   LoginResponse,
+  PageResponse,
   PaymentMethod,
   Product,
   RegisterRequest,
@@ -157,14 +158,33 @@ function formatLocalDateTime(date: Date): string {
   )}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
-// ADMIN only.
+// ADMIN only. The backend paginates this endpoint (each request is
+// bounded), so we fetch every page and return one flat array. This
+// keeps the report totals (revenue, sale count, top products, CSV
+// export) complete without any changes to SalesReportPage.
 export async function getSalesBetween(from: Date, to: Date): Promise<SaleResponse[]> {
-  const params = new URLSearchParams({
-    from: formatLocalDateTime(from),
-    to: formatLocalDateTime(to),
-  });
-  const res = await apiFetch(`/api/sales?${params.toString()}`);
-  return handleResponse<SaleResponse[]>(res);
+  const allSales: SaleResponse[] = [];
+
+  let page = 0;
+  let totalPages = 1;
+
+  while (page < totalPages) {
+    const params = new URLSearchParams({
+      from: formatLocalDateTime(from),
+      to: formatLocalDateTime(to),
+      page: String(page),
+      size: "100",
+    });
+
+    const res = await apiFetch(`/api/sales?${params.toString()}`);
+    const data = await handleResponse<PageResponse<SaleResponse>>(res);
+
+    allSales.push(...data.content);
+    totalPages = data.totalPages;
+    page += 1;
+  }
+
+  return allSales;
 }
 
 // ADMIN only.
