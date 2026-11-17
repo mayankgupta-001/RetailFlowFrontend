@@ -1,5 +1,4 @@
 import {
-  LayoutDashboard,
   Package,
   Boxes,
   ShoppingCart,

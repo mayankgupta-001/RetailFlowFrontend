@@ -50,6 +50,15 @@ export interface SaleResponse {
   voided: boolean;
 }
 
+// Shape returned by paginated backend endpoints (e.g. GET /api/sales).
+export interface PageResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
 export interface UpdateProductRequest {
   name: string;
   sellingPrice: number;
