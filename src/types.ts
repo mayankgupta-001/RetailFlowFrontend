@@ -59,6 +59,31 @@ export interface PageResponse<T> {
   totalPages: number;
 }
 
+export type DiscountType = "FIXED" | "PERCENTAGE";
+
+// Scheduled discount managed by admins. A discount is applicable only
+// when active is true and now is within [startAt, endAt].
+export interface Discount {
+  id: number;
+  name: string;
+  type: DiscountType;
+  value: number;
+  startAt: string;
+  endAt: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateDiscountRequest {
+  name: string;
+  type: DiscountType;
+  value: number;
+  startAt: string;
+  endAt: string;
+  active?: boolean;
+}
+
 export interface UpdateProductRequest {
   name: string;
   sellingPrice: number;

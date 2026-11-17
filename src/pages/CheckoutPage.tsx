@@ -14,10 +14,12 @@ import {
   Plus,
   Printer,
   RotateCcw,
+  Tag,
 } from "lucide-react";
 
 import type {
   CartItem,
+  Discount,
   PaymentMethod,
   Product,
   SaleResponse,
@@ -26,6 +28,7 @@ import type {
 import {
   getProductByBarcode,
   checkout,
+  listDiscounts,
 } from "../api";
 
 import CameraScanner from "../components/CameraScanner";
@@ -61,6 +64,17 @@ export default function CheckoutPage({
   const [discount, setDiscount] =
     useState(0);
 
+  // Scheduled (admin-created) vs manual discount. Mutually exclusive:
+  // the backend rejects a checkout that combines both.
+  const [discountMode, setDiscountMode] =
+    useState<"manual" | "scheduled">("manual");
+
+  const [discounts, setDiscounts] =
+    useState<Discount[]>([]);
+
+  const [selectedDiscountId, setSelectedDiscountId] =
+    useState<number | null>(null);
+
   const [paymentMethod, setPaymentMethod] =
     useState<PaymentMethod>("CASH");
 
@@ -86,6 +100,30 @@ export default function CheckoutPage({
 
   useEffect(() => {
     inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDiscounts() {
+      try {
+        const data = await listDiscounts();
+        if (!cancelled) {
+          setDiscounts(data);
+        }
+      } catch {
+        // Non-critical: checkout still works without discounts.
+        if (!cancelled) {
+          setDiscounts([]);
+        }
+      }
+    }
+
+    loadDiscounts();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   function addToCart(product: Product) {
@@ -236,8 +274,35 @@ export default function CheckoutPage({
     0
   );
 
+  // Only enabled discounts whose window contains "now" are offered;
+  // the backend re-validates all of this at checkout.
+  const applicableDiscounts = discounts.filter(
+    (d) =>
+      d.active &&
+      new Date() >= new Date(d.startAt) &&
+      new Date() <= new Date(d.endAt)
+  );
+
+  const selectedDiscount =
+    discountMode === "scheduled"
+      ? applicableDiscounts.find(
+          (d) => d.id === selectedDiscountId
+        ) ?? null
+      : null;
+
+  // Frontend estimate only — the backend computes the final amount.
+  const discountAmount =
+    discountMode === "scheduled" && selectedDiscount
+      ? Math.min(
+          selectedDiscount.type === "PERCENTAGE"
+            ? (subtotal * selectedDiscount.value) / 100
+            : selectedDiscount.value,
+          subtotal
+        )
+      : discount;
+
   const total = Math.max(
-    subtotal - discount,
+    subtotal - discountAmount,
     0
   );
 
@@ -258,13 +323,17 @@ export default function CheckoutPage({
             quantity:
               item.quantity,
           })),
-          discount,
-          paymentMethod
+          discountMode === "scheduled" ? 0 : discount,
+          paymentMethod,
+          discountMode === "scheduled"
+            ? selectedDiscountId ?? undefined
+            : undefined
         );
 
       setReceipt(result);
       setCart([]);
       setDiscount(0);
+      setSelectedDiscountId(null);
     } catch (err) {
       setCheckoutError(
         err instanceof Error
@@ -784,33 +853,110 @@ export default function CheckoutPage({
           <div className="space-y-5 p-5">
             {/* Discount */}
             <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700">
-                Discount
-              </label>
+              <div className="mb-2 flex items-center justify-between">
+                <label className="text-sm font-semibold text-slate-700">
+                  Discount
+                </label>
 
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
-                  ₹
-                </span>
+                {applicableDiscounts.length > 0 && (
+                  <div className="flex rounded-lg border border-slate-200 text-xs font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDiscountMode("manual");
+                        setSelectedDiscountId(null);
+                      }}
+                      className={`px-2.5 py-1 transition ${
+                        discountMode === "manual"
+                          ? "bg-indigo-600 text-white"
+                          : "text-slate-500 hover:bg-slate-50"
+                      }`}
+                    >
+                      Manual
+                    </button>
 
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={
-                    discount || ""
-                  }
-                  onChange={(e) =>
-                    setDiscount(
-                      parseFloat(
-                        e.target.value
-                      ) || 0
-                    )
-                  }
-                  className="rf-input pl-8"
-                  placeholder="0.00"
-                />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDiscountMode("scheduled");
+                        setDiscount(0);
+                      }}
+                      className={`px-2.5 py-1 transition ${
+                        discountMode === "scheduled"
+                          ? "bg-indigo-600 text-white"
+                          : "text-slate-500 hover:bg-slate-50"
+                      }`}
+                    >
+                      Scheduled
+                    </button>
+                  </div>
+                )}
               </div>
+
+              {discountMode === "scheduled" ? (
+                applicableDiscounts.length === 0 ? (
+                  <p className="rounded-lg bg-slate-50 p-2 text-xs text-slate-500">
+                    No scheduled discounts are running right now.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {applicableDiscounts.map((d) => (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() =>
+                          setSelectedDiscountId(
+                            selectedDiscountId === d.id ? null : d.id
+                          )
+                        }
+                        className={`flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm transition ${
+                          selectedDiscountId === d.id
+                            ? "border-indigo-600 bg-indigo-50 text-indigo-700"
+                            : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        <Tag size={15} className="shrink-0" />
+
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-semibold">
+                            {d.name}
+                          </span>
+
+                          <span className="block text-xs text-slate-400">
+                            {d.type === "PERCENTAGE"
+                              ? `${d.value}% off`
+                              : `₹${d.value.toFixed(2)} off`}
+                          </span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )
+              ) : (
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+                    ₹
+                  </span>
+
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={
+                      discount || ""
+                    }
+                    onChange={(e) =>
+                      setDiscount(
+                        parseFloat(
+                          e.target.value
+                        ) || 0
+                      )
+                    }
+                    className="rf-input pl-8"
+                    placeholder="0.00"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Payment */}
@@ -881,7 +1027,7 @@ export default function CheckoutPage({
 
                 <span className="font-medium text-emerald-600">
                   -₹
-                  {discount.toFixed(
+                  {discountAmount.toFixed(
                     2
                   )}
                 </span>

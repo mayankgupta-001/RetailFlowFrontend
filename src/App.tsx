@@ -24,6 +24,7 @@ import ProductsPage from "./pages/ProductsPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import InvoicesPage from "./pages/InvoicesPage";
 import InventoryPage from "./pages/InventoryPage";
+import DiscountsPage from "./pages/DiscountsPage";
 import SalesReportPage from "./pages/SalesReportPage";
 import LoginPage from "./pages/LoginPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
@@ -276,6 +277,16 @@ function AppContent() {
                     products={products}
                     onStockChanged={loadProducts}
                   />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Discounts */}
+            <Route
+              path="/discounts"
+              element={
+                <ProtectedRoute adminOnly>
+                  <DiscountsPage />
                 </ProtectedRoute>
               }
             />

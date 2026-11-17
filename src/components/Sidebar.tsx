@@ -7,6 +7,7 @@ import {
   Users,
   Settings,
   LogOut,
+  Percent,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -38,6 +39,11 @@ const adminNavigation = [
     name: "Inventory",
     path: "/inventory",
     icon: Boxes,
+  },
+  {
+    name: "Discounts",
+    path: "/discounts",
+    icon: Percent,
   },
   {
     name: "Sales Report",

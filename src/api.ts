@@ -1,5 +1,7 @@
 import type {
   CreateProductRequest,
+  CreateDiscountRequest,
+  Discount,
   InventoryLogResponse,
   LoginRequest,
   LoginResponse,
@@ -123,17 +125,82 @@ export async function getInventoryLogs(productId: number): Promise<InventoryLogR
   return handleResponse<InventoryLogResponse[]>(res);
 }
 
-// ---- Sales ----
+// ---- Discounts ----
 
+// Reads are open to any logged-in user (the checkout screen lists
+// applicable discounts); mutations are ADMIN-only and will 403 for
+// cashiers.
+export async function listDiscounts(): Promise<Discount[]> {
+  const res = await apiFetch("/api/discounts");
+  return handleResponse<Discount[]>(res);
+}
+
+export async function createDiscount(
+  request: CreateDiscountRequest
+): Promise<Discount> {
+  const res = await apiFetch("/api/discounts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  });
+  return handleResponse<Discount>(res);
+}
+
+export async function updateDiscount(
+  id: number,
+  request: CreateDiscountRequest
+): Promise<Discount> {
+  const res = await apiFetch(`/api/discounts/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  });
+  return handleResponse<Discount>(res);
+}
+
+export async function setDiscountStatus(
+  id: number,
+  active: boolean
+): Promise<Discount> {
+  const res = await apiFetch(`/api/discounts/${id}/status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ active }),
+  });
+  return handleResponse<Discount>(res);
+}
+
+export async function deleteDiscount(id: number): Promise<void> {
+  const res = await apiFetch(`/api/discounts/${id}`, { method: "DELETE" });
+  if (!res.ok) {
+    throw new Error("Failed to delete discount");
+  }
+}
+
+// ---- Sales ----
 export async function checkout(
   items: { productId: number; quantity: number }[],
   discount: number,
-  paymentMethod: PaymentMethod
+  paymentMethod: PaymentMethod,
+  discountId?: number
 ): Promise<SaleResponse> {
+  // A scheduled discount is referenced by ID and the backend resolves
+  // its value; a manual discount is a plain amount. The two are
+  // mutually exclusive (the backend rejects combining them).
+  const body: Record<string, unknown> = {
+    items,
+    discount,
+    paymentMethod,
+  };
+
+  if (discountId !== undefined) {
+    body.discountId = discountId;
+  }
+
   const res = await apiFetch("/api/sales/checkout", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ items, discount, paymentMethod }),
+    body: JSON.stringify(body),
   });
   return handleResponse<SaleResponse>(res);
 }
