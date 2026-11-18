@@ -173,7 +173,16 @@ export async function setDiscountStatus(
 export async function deleteDiscount(id: number): Promise<void> {
   const res = await apiFetch(`/api/discounts/${id}`, { method: "DELETE" });
   if (!res.ok) {
-    throw new Error("Failed to delete discount");
+    let message = `Failed to delete discount (status ${res.status})`;
+    try {
+      const body = await res.json();
+      if (body && typeof body.error === "string") {
+        message = body.error;
+      }
+    } catch {
+      // Response body was not JSON; keep the generic message.
+    }
+    throw new Error(message);
   }
 }
 

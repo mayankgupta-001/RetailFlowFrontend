@@ -48,6 +48,20 @@ function toDatetimeLocalValue(iso: string): string {
   )}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+// The backend stores LocalDateTime and interprets it as local
+// wall-clock time (IST). Sending ISO with a UTC offset (toISOString)
+// would shift every discount window by the timezone offset, so we
+// build the local-time string explicitly — same approach as
+// formatLocalDateTime in api.ts for the sales report.
+function toLocalDateTimeString(date: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+    date.getDate()
+  )}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
+    date.getSeconds()
+  )}`;
+}
+
 function discountState(discount: Discount): {
   label: string;
   className: string;
@@ -143,8 +157,8 @@ export default function DiscountsPage() {
       name: form.name.trim(),
       type: form.type,
       value,
-      startAt: new Date(form.startAt).toISOString(),
-      endAt: new Date(form.endAt).toISOString(),
+      startAt: toLocalDateTimeString(new Date(form.startAt)),
+      endAt: toLocalDateTimeString(new Date(form.endAt)),
       active: form.active,
     };
 
@@ -284,7 +298,10 @@ export default function DiscountsPage() {
                   <p className="mt-1 text-sm text-slate-600">
                     {formatValue(discount)}
                     {discount.type === "PERCENTAGE" && (
-                      <span className="text-slate-400"> (max ₹5000 cap)</span>
+                      <span className="text-slate-400">
+                        {" "}
+                        (capped at checkout)
+                      </span>
                     )}
                   </p>
 
