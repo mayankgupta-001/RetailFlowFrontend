@@ -17,6 +17,7 @@ const pageTitles: Record<string, string> = {
   "/inventory": "Inventory",
   "/reports": "Sales Report",
   "/users": "Users",
+  "/settings": "Settings",
 };
 
 export default function Topbar({

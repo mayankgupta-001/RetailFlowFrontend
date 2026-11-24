@@ -7,6 +7,10 @@ export interface Product {
   stock: number;
   minStock: number;
   category: string | null;
+  // GST rate baked into the tax-inclusive sellingPrice, plus the HSN
+  // code printed on tax invoices. Rates default to 0 (no GST).
+  taxRate: number;
+  hsnCode: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -19,6 +23,8 @@ export interface CreateProductRequest {
   stock: number;
   minStock: number;
   category?: string;
+  taxRate?: number;
+  hsnCode?: string;
 }
 
 export interface CartItem {
@@ -36,6 +42,14 @@ export interface SaleItemResponse {
   price: number;
   quantity: number;
   subtotal: number;
+  // Snapshot taken at checkout. Null on sales recorded before GST
+  // support existed, which is why the receipt skips the tax block.
+  taxRate: number | null;
+  hsnCode: string | null;
+  taxableAmount: number | null;
+  taxAmount: number | null;
+  cgstAmount: number | null;
+  sgstAmount: number | null;
 }
 
 export interface SaleResponse {
@@ -44,6 +58,10 @@ export interface SaleResponse {
   subtotal: number;
   discount: number;
   total: number;
+  taxableAmount: number | null;
+  taxAmount: number | null;
+  cgstAmount: number | null;
+  sgstAmount: number | null;
   paymentMethod: PaymentMethod;
   createdAt: string;
   items: SaleItemResponse[];
@@ -90,6 +108,10 @@ export interface UpdateProductRequest {
   costPrice?: number;
   minStock: number;
   category?: string;
+  // Omitting taxRate keeps the stored rate on the backend, so an older
+  // client can't silently zero a product's GST.
+  taxRate?: number;
+  hsnCode?: string;
 }
 
 export type InventoryTransactionType = "STOCK_IN" | "STOCK_OUT" | "ADJUSTMENT";
@@ -134,4 +156,25 @@ export interface RegisterRequest {
   username: string;
   password: string;
   role: Role;
+}
+
+// Store identity printed on receipts. gstRegistered is derived by the
+// backend from GSTIN presence, so the UI never re-implements that rule.
+export interface StoreSettings {
+  id: number;
+  shopName: string;
+  address: string | null;
+  phone: string | null;
+  stateCode: string | null;
+  gstin: string | null;
+  gstRegistered: boolean;
+  updatedAt: string;
+}
+
+export interface UpdateStoreSettingsRequest {
+  shopName: string;
+  address?: string;
+  phone?: string;
+  stateCode?: string;
+  gstin?: string;
 }

@@ -55,6 +55,11 @@ const adminNavigation = [
     path: "/users",
     icon: Users,
   },
+  {
+    name: "Settings",
+    path: "/settings",
+    icon: Settings,
+  },
 ];
 
 export default function Sidebar({ cartCount = 0 }: SidebarProps) {
@@ -145,16 +150,6 @@ export default function Sidebar({ cartCount = 0 }: SidebarProps) {
             })}
           </>
         )}
-
-        <div className="my-6 border-t border-white/10" />
-
-        <button
-          type="button"
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-slate-400 transition hover:bg-white/5 hover:text-white"
-        >
-          <Settings size={18} />
-          Settings
-        </button>
       </nav>
 
       {/* User */}

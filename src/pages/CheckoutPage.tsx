@@ -23,11 +23,13 @@ import type {
   PaymentMethod,
   Product,
   SaleResponse,
+  StoreSettings,
 } from "../types";
 
 import {
   getProductByBarcode,
   checkout,
+  getStoreSettings,
   listDiscounts,
 } from "../api";
 
@@ -37,6 +39,11 @@ import ProductSearchBar from "../components/ProductSearchBar";
 import {
   openReceiptWindow,
 } from "../utils/receipt";
+
+import {
+  formatTaxRate,
+  groupTaxByRate,
+} from "../utils/tax";
 
 import {
   useToast,
@@ -71,6 +78,11 @@ export default function CheckoutPage({
 
   const [discounts, setDiscounts] =
     useState<Discount[]>([]);
+
+  // Needed for the receipt header (shop name, GSTIN) and the invoice
+  // label. Non-critical: the receipt falls back to the app name.
+  const [store, setStore] =
+    useState<StoreSettings | null>(null);
 
   const [selectedDiscountId, setSelectedDiscountId] =
     useState<number | null>(null);
@@ -120,6 +132,22 @@ export default function CheckoutPage({
     }
 
     loadDiscounts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    getStoreSettings()
+      .then((data) => {
+        if (!cancelled) setStore(data);
+      })
+      .catch(() => {
+        // Receipts still print without store details.
+      });
 
     return () => {
       cancelled = true;
@@ -218,7 +246,7 @@ export default function CheckoutPage({
   function handlePrintReceipt() {
     if (!receipt) return;
 
-    if (!openReceiptWindow(receipt)) {
+    if (!openReceiptWindow(receipt, { store })) {
       showToast(
         "Pop-up blocked. Allow pop-ups to print receipts.",
         "error"
@@ -432,6 +460,60 @@ export default function CheckoutPage({
                 )}
               </span>
             </div>
+
+            {receipt.taxAmount != null && (
+              <>
+                {groupTaxByRate(receipt.items).map(
+                  (group) => (
+                    <div
+                      key={group.rate}
+                      className="space-y-1 border-t border-dashed border-slate-200 pt-3 text-xs text-slate-500"
+                    >
+                      <div className="flex justify-between">
+                        <span>
+                          Taxable value (
+                          {formatTaxRate(group.rate)}
+                          %)
+                        </span>
+
+                        <span>
+                          ₹
+                          {group.taxableAmount.toFixed(
+                            2
+                          )}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between">
+                        <span>
+                          CGST{" "}
+                          {formatTaxRate(group.rate / 2)}
+                          %
+                        </span>
+
+                        <span>
+                          ₹
+                          {group.cgstAmount.toFixed(2)}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between">
+                        <span>
+                          SGST{" "}
+                          {formatTaxRate(group.rate / 2)}
+                          %
+                        </span>
+
+                        <span>
+                          ₹
+                          {group.sgstAmount.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                )}
+              </>
+            )}
 
             <div className="flex items-center justify-between border-t border-slate-200 pt-3">
               <span className="font-semibold text-slate-700">
@@ -760,6 +842,16 @@ export default function CheckoutPage({
                           )}{" "}
                           each
                         </p>
+
+                        {item.product.taxRate > 0 && (
+                          <span className="mt-1 inline-flex rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">
+                            Incl.{" "}
+                            {formatTaxRate(
+                              item.product.taxRate
+                            )}
+                            % GST
+                          </span>
+                        )}
                       </div>
 
                       <p className="font-bold text-slate-900">
@@ -1045,6 +1137,11 @@ export default function CheckoutPage({
                   )}
                 </span>
               </div>
+
+              <p className="text-xs text-slate-400">
+                Prices include GST — the tax
+                breakup is on the receipt.
+              </p>
             </div>
 
             {checkoutError && (

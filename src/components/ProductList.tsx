@@ -1,4 +1,5 @@
 import type { Product } from "../types";
+import { formatTaxRate } from "../utils/tax";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
 
@@ -56,13 +57,28 @@ export default function ProductList({
           <p className="text-xs text-gray-400 text-center">{product.barcode}</p>
 
           <div className="flex justify-between items-center mt-2">
-            <span className="font-bold text-lg">
-              ₹{product.sellingPrice.toFixed(2)}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-lg">
+                ₹{product.sellingPrice.toFixed(2)}
+              </span>
+
+              {product.taxRate > 0 && (
+                <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-600">
+                  GST {formatTaxRate(product.taxRate)}%
+                </span>
+              )}
+            </div>
+
             <span className="text-sm text-gray-500">
               Stock: {product.stock}
             </span>
           </div>
+
+          {product.hsnCode && (
+            <p className="text-xs text-gray-400">
+              HSN {product.hsnCode}
+            </p>
+          )}
 
           <div className="flex gap-2 mt-2">
             <button

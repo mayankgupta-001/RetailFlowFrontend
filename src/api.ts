@@ -11,7 +11,9 @@ import type {
   RegisterRequest,
   SaleResponse,
   StockAdjustmentRequest,
+  StoreSettings,
   UpdateProductRequest,
+  UpdateStoreSettingsRequest,
 } from "./types";
 import { clearSession, getToken } from "./auth/tokenStorage";
 
@@ -69,6 +71,26 @@ export async function register(request: RegisterRequest): Promise<void> {
     body: JSON.stringify(request),
   });
   return handleResponse<void>(res);
+}
+
+// ---- Store settings ----
+
+// Readable by any logged-in user because the cashier's receipt needs the
+// shop name and GSTIN. Editing is ADMIN-only and will 403 for cashiers.
+export async function getStoreSettings(): Promise<StoreSettings> {
+  const res = await apiFetch("/api/settings/store");
+  return handleResponse<StoreSettings>(res);
+}
+
+export async function updateStoreSettings(
+  request: UpdateStoreSettingsRequest
+): Promise<StoreSettings> {
+  const res = await apiFetch("/api/settings/store", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  });
+  return handleResponse<StoreSettings>(res);
 }
 
 // ---- Products ----
