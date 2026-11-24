@@ -24,6 +24,8 @@ export default function EditProductModal({
       costPrice: product.costPrice ?? undefined,
       minStock: product.minStock,
       category: product.category ?? "",
+      taxRate: product.taxRate ?? 0,
+      hsnCode: product.hsnCode ?? "",
     });
   }
   if (!product && form !== null) {
@@ -134,6 +136,44 @@ export default function EditProductModal({
             onChange={(e) => setForm({ ...form, category: e.target.value })}
             className="w-full border rounded px-3 py-2 text-sm"
           />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">
+              GST rate (%)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              max="100"
+              value={form.taxRate ?? 0}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  taxRate: parseFloat(e.target.value) || 0,
+                })
+              }
+              className="w-full border rounded px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">
+              HSN code
+            </label>
+            <input
+              maxLength={8}
+              value={form.hsnCode ?? ""}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  hsnCode: e.target.value.replace(/\s/g, ""),
+                })
+              }
+              className="w-full border rounded px-3 py-2 text-sm font-mono"
+            />
+          </div>
         </div>
 
         <p className="text-xs text-gray-400">

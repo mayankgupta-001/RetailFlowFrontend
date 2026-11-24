@@ -28,6 +28,7 @@ import DiscountsPage from "./pages/DiscountsPage";
 import SalesReportPage from "./pages/SalesReportPage";
 import LoginPage from "./pages/LoginPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
+import SettingsPage from "./pages/SettingsPage";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import EditProductModal from "./components/EditProductModal";
@@ -307,6 +308,16 @@ function AppContent() {
               element={
                 <ProtectedRoute adminOnly>
                   <AdminUsersPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Store settings */}
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute adminOnly>
+                  <SettingsPage />
                 </ProtectedRoute>
               }
             />

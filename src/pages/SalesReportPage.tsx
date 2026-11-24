@@ -70,6 +70,14 @@ export default function SalesReportPage() {
   const totalRevenue = activeSales.reduce((sum, s) => sum + s.total, 0);
   const saleCount = activeSales.length;
 
+  // Headline revenue stays gross (tax-inclusive) so the number matches
+  // what was actually collected; tax is shown alongside, never split out.
+  const totalTax = activeSales.reduce((sum, s) => sum + (s.taxAmount ?? 0), 0);
+  const totalTaxable = activeSales.reduce(
+    (sum, s) => sum + (s.taxableAmount ?? 0),
+    0
+  );
+
   const productTotals = new Map<string, number>();
   for (const sale of activeSales) {
     for (const item of sale.items) {
@@ -85,13 +93,30 @@ export default function SalesReportPage() {
 
   function handleExportCsv() {
     const rows = [
-      ["Invoice", "Date", "Items", "Subtotal", "Discount", "Total", "Payment Method", "Voided"],
+      [
+        "Invoice",
+        "Date",
+        "Items",
+        "Subtotal",
+        "Discount",
+        "Taxable Value",
+        "CGST",
+        "SGST",
+        "Tax",
+        "Total",
+        "Payment Method",
+        "Voided",
+      ],
       ...sales.map((s) => [
         s.invoiceNumber,
         new Date(s.createdAt).toLocaleString(),
         s.items.map((i) => `${i.productName} x${i.quantity}`).join("; "),
         s.subtotal.toFixed(2),
         s.discount.toFixed(2),
+        s.taxableAmount?.toFixed(2) ?? "",
+        s.cgstAmount?.toFixed(2) ?? "",
+        s.sgstAmount?.toFixed(2) ?? "",
+        s.taxAmount?.toFixed(2) ?? "",
         s.total.toFixed(2),
         s.paymentMethod,
         s.voided ? "Yes" : "No",
@@ -223,10 +248,18 @@ export default function SalesReportPage() {
 
       {!loading && !error && (
         <>
-          <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-3">
             <div className="border rounded-lg bg-white p-4">
               <p className="text-sm text-gray-500">Total revenue</p>
               <p className="text-2xl font-bold">₹{totalRevenue.toFixed(2)}</p>
+              <p className="text-xs text-gray-400 mt-1">GST inclusive</p>
+            </div>
+            <div className="border rounded-lg bg-white p-4">
+              <p className="text-sm text-gray-500">GST collected</p>
+              <p className="text-2xl font-bold">₹{totalTax.toFixed(2)}</p>
+              <p className="text-xs text-gray-400 mt-1">
+                on ₹{totalTaxable.toFixed(2)} taxable
+              </p>
             </div>
             <div className="border rounded-lg bg-white p-4">
               <p className="text-sm text-gray-500">Sales</p>
@@ -284,6 +317,11 @@ export default function SalesReportPage() {
                     <span className="font-semibold whitespace-nowrap">
                       ₹{sale.total.toFixed(2)}
                     </span>
+                    {sale.taxAmount != null && (
+                      <span className="text-xs text-gray-400 whitespace-nowrap">
+                        incl. ₹{sale.taxAmount.toFixed(2)} GST
+                      </span>
+                    )}
                     {!sale.voided && (
                       <button
                         onClick={() => setVoidTargetId(sale.id)}

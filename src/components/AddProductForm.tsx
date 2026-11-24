@@ -16,6 +16,8 @@ const emptyForm: CreateProductRequest = {
   stock: 0,
   minStock: 0,
   category: "",
+  taxRate: 0,
+  hsnCode: "",
 };
 
 export default function AddProductForm({
@@ -158,6 +160,10 @@ export default function AddProductForm({
               className="rf-input pl-8"
             />
           </div>
+
+          <p className="mt-1 text-xs text-slate-400">
+            Include GST — the customer pays this amount.
+          </p>
         </div>
 
         <div>
@@ -237,6 +243,52 @@ export default function AddProductForm({
               })
             }
             className="rf-input"
+          />
+        </div>
+        <div>
+          <label className="mb-2 block text-sm font-semibold text-slate-700">
+            GST rate (%)
+          </label>
+
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            max="100"
+            placeholder="0"
+            value={form.taxRate ?? 0}
+            onChange={(e) =>
+              updateForm({
+                taxRate:
+                  parseFloat(e.target.value) || 0,
+              })
+            }
+            className="rf-input"
+          />
+
+          <p className="mt-1 text-xs text-slate-400">
+            Common slabs: 0, 5, 12, 18, 28.
+          </p>
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-semibold text-slate-700">
+            HSN code
+          </label>
+
+          <input
+            maxLength={8}
+            placeholder="Optional, e.g. 1001"
+            value={form.hsnCode ?? ""}
+            onChange={(e) =>
+              updateForm({
+                hsnCode: e.target.value.replace(
+                  /\s/g,
+                  ""
+                ),
+              })
+            }
+            className="rf-input font-mono"
           />
         </div>
       </div>

@@ -11,9 +11,11 @@ import {
 
 import type {
   SaleResponse,
+  StoreSettings,
 } from "../types";
 
 import {
+  getStoreSettings,
   lookupSales,
 } from "../api";
 
@@ -38,8 +40,29 @@ export default function InvoicesPage() {
   const [error, setError] =
     useState<string | null>(null);
 
+  // Shop identity for the printed receipt. Non-critical: the receipt
+  // falls back to the app name if this request fails.
+  const [store, setStore] =
+    useState<StoreSettings | null>(null);
+
   const { showToast } =
     useToast();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    getStoreSettings()
+      .then((data) => {
+        if (!cancelled) setStore(data);
+      })
+      .catch(() => {
+        // Printing still works without store details.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -87,7 +110,7 @@ export default function InvoicesPage() {
     if (
       !openReceiptWindow(
         sale,
-        { duplicate: true }
+        { duplicate: true, store }
       )
     ) {
       showToast(
@@ -210,6 +233,10 @@ export default function InvoicesPage() {
                     </th>
 
                     <th className="px-5 py-4 text-right font-semibold text-slate-600">
+                      GST
+                    </th>
+
+                    <th className="px-5 py-4 text-right font-semibold text-slate-600">
                       Total
                     </th>
 
@@ -273,6 +300,12 @@ export default function InvoicesPage() {
                           {new Date(
                             sale.createdAt
                           ).toLocaleString()}
+                        </td>
+
+                        <td className="whitespace-nowrap px-5 py-4 text-right text-xs text-slate-500">
+                          {sale.taxAmount != null
+                            ? `₹${sale.taxAmount.toFixed(2)}`
+                            : "—"}
                         </td>
 
                         <td className="whitespace-nowrap px-5 py-4 text-right font-bold text-slate-900">
